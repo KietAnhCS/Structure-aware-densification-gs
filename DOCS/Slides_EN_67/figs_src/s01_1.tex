@@ -1,0 +1,22 @@
+\documentclass[tikz,border=6pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Noto Sans}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\definecolor{cudaG}{RGB}{118,185,0}
+\definecolor{sadRed}{RGB}{200,60,50}
+\definecolor{gsBlue}{RGB}{40,110,190}
+\definecolor{pyYel}{RGB}{240,170,30}
+\definecolor{gray5}{RGB}{85,85,85}
+\begin{document}
+\begin{tikzpicture}[node distance=12mm]
+\node[draw=gsBlue,fill=gsBlue!10,rounded corners,align=center,inner sep=8pt,minimum width=4.2cm,minimum height=2.4cm] (in) {\textbf{Input}\[2pt]240 photos of the station\+ COLMAP poses};
+\node[draw=cudaG,fill=cudaG!12,rounded corners,align=center,inner sep=8pt,minimum width=4.2cm,minimum height=2.4cm,right=of in] (train) {\textbf{Reconstruct}\[2pt]SADGS training\3D Gaussians (\texttt{.ply})};
+\node[draw=sadRed,fill=sadRed!10,rounded corners,align=center,inner sep=8pt,minimum width=4.2cm,minimum height=2.4cm,right=of train] (render) {\textbf{Render}\[2pt]novel views at the\60 test poses};
+\node[draw=pyYel,fill=pyYel!15,rounded corners,align=center,inner sep=8pt,minimum width=4.2cm,minimum height=2.4cm,right=of render] (out) {\textbf{Digital twin}\[2pt]photorealistic 3D model\of the BTS station};
+\draw[-{Stealth[length=3mm]},line width=1.4pt,gray5] (in) -- (train);
+\draw[-{Stealth[length=3mm]},line width=1.4pt,gray5] (train) -- (render);
+\draw[-{Stealth[length=3mm]},line width=1.4pt,gray5] (render) -- (out);
+\node[font=\small,gray5,align=center,below=10mm of render] {Scored against held-out photos with\Score = 0.4(1-LPIPS) + 0.3 SSIM + 0.3 PSNR\_norm};
+\end{tikzpicture}
+\end{document}

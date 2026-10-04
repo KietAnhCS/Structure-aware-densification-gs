@@ -1,0 +1,28 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{itemize items}[circle]
+\setbeamercolor{title}{fg=white,bg=black!80!green}
+\setbeamercolor{frametitle}{fg=white,bg=black!75!green}
+
+\usepackage{fontspec}
+\setmainfont{Noto Sans}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,backgrounds}
+
+\definecolor{cudaG}{RGB}{118,185,0}
+\definecolor{sadRed}{RGB}{200,60,50}
+\definecolor{gsBlue}{RGB}{40,110,190}
+\definecolor{pyYel}{RGB}{240,170,30}
+\definecolor{bgGray}{RGB}{242,242,242}
+
+\newcommand{\keybox}[2][cudaG]{%
+  \begin{tikzpicture}
+    \node[draw=#1,line width=1pt,rounded corners,fill=#1!10,inner sep=6pt,text width=0.92\textwidth,font=\small] {#2};
+  \end{tikzpicture}}

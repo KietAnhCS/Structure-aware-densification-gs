@@ -1,0 +1,44 @@
+\documentclass[tikz,border=6pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Noto Sans}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+
+\definecolor{cudaG}{RGB}{118,185,0}
+\definecolor{sadRed}{RGB}{200,60,50}
+\definecolor{gsBlue}{RGB}{40,110,190}
+\definecolor{secGray}{RGB}{85,85,85}
+
+\begin{document}
+\begin{tikzpicture}[
+  >={Stealth[length=2.5mm]},
+  bluebox/.style={draw=gsBlue, line width=1pt, rounded corners=3pt, fill=gsBlue!10,
+              minimum width=4.6cm, minimum height=1.9cm, align=center, font=\small, inner sep=5pt},
+  redbox/.style={draw=sadRed, line width=1pt, rounded corners=3pt, fill=sadRed!10,
+              minimum width=4.6cm, minimum height=1.9cm, align=center, font=\small, inner sep=5pt},
+  greenbox/.style={draw=cudaG, line width=1pt, rounded corners=3pt, fill=cudaG!10,
+              minimum width=4.6cm, minimum height=1.9cm, align=center, font=\small, inner sep=5pt},
+  arr/.style={-{Stealth[length=2.5mm]}, line width=1pt, draw=secGray},
+]
+% Top row: left to right
+\node[bluebox] (gt) {GT image $I_k$\[2pt]{\scriptsize one per training view}};
+\node[bluebox, right=1.1cm of gt] (grad) {Sobel gradients $I_x,I_y$\[2pt]{\scriptsize after Gaussian blur $\sigma$, per RGB channel}};
+\node[bluebox, right=1.1cm of grad] (dz) {Di Zenzo sum over RGB\[2pt]{\scriptsize $I_{xx}=\sum_c I_{x,c}^2$, $I_{xy}$, $I_{yy}$}};
+% Bottom row: right to left
+\node[redbox, below=1.3cm of dz] (st) {Window blur $G_\rho$\[2pt]{\scriptsize $S_{xx},S_{xy},S_{yy}$; normalize per image}};
+\node[redbox, left=1.1cm of st] (eig) {Eigenvalues\[2pt]{\scriptsize $\lambda_{1,2}=\frac{\mathrm{tr}}{2}\pm\sqrt{(\frac{\mathrm{tr}}{2})^2-\det}$}};
+\node[greenbox, left=1.1cm of eig] (lmin) {$\lambda_{\min}=\dfrac{1}{\sqrt{\lambda_1}+10^{-5}}$\[2pt]{\scriptsize wavelength in pixels}};
+
+\draw[arr] (gt) -- (grad);
+\draw[arr] (grad) -- (dz);
+\draw[arr] (dz) -- (st);
+\draw[arr] (st) -- (eig);
+\draw[arr] (eig) -- (lmin);
+
+\node[draw=secGray, dashed, rounded corners=3pt, align=center, font=\small,
+      inner sep=6pt, below=1.0cm of eig, minimum width=14.5cm] (note)
+  {Computed \textbf{once} before training under \texttt{no\_grad}, cached per view on the GPU.\
+   Used only as a gate for densify/prune, not as a loss term.};
+\end{tikzpicture}
+\end{document}

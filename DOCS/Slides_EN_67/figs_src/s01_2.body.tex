@@ -1,0 +1,17 @@
+\begin{tikzpicture}[
+  dir/.style={draw=cudaG,fill=cudaG!12,rounded corners,inner sep=5pt,font=\large\ttfamily},
+  fil/.style={draw=gsBlue,fill=gsBlue!8,rounded corners,inner sep=5pt,align=left,font=\large},
+  ln/.style={gray5,line width=0.9pt}]
+\node[dir,font=\large\ttfamily\bfseries] (root) at (0,0) {HCM0539/};
+\node[dir] (train) at (-4.2,-2.0) {train/};
+\node[dir] (test) at (4.2,-2.0) {test/};
+\draw[ln] (root.south) -- (0,-1.0) -- (-4.2,-1.0) -- (train.north);
+\draw[ln] (0,-1.0) -- (4.2,-1.0) -- (test.north);
+\node[fil,anchor=north west] (img) at (-7.0,-3.0) {\texttt{images/}\hspace{3mm}240 training photos};
+\node[fil,anchor=north west] (sp) at (-7.0,-4.0) {\texttt{sparse/0/}\hspace{3mm}\texttt{cameras.bin}, \texttt{images.bin}, \texttt{points3D.bin}};
+\node[fil,anchor=north west] (timg) at (1.2,-3.0) {\texttt{images/}\hspace{3mm}60 test photos (ground truth)};
+\node[fil,anchor=north west] (csv) at (1.2,-4.0) {\texttt{test\_poses.csv}\hspace{3mm}60 camera poses};
+\draw[ln] (train.south) -- (-5.6,-2.6) -- (-5.6,-3.4);
+\draw[ln] (test.south) -- (2.8,-2.6) -- (2.8,-3.4);
+\end{tikzpicture}
+\end{document}

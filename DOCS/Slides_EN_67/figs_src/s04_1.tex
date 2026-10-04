@@ -1,0 +1,41 @@
+\documentclass[tikz,border=6pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Noto Sans}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+
+\definecolor{cudaG}{RGB}{118,185,0}
+\definecolor{sadRed}{RGB}{200,60,50}
+\definecolor{gsBlue}{RGB}{40,110,190}
+\definecolor{greyT}{RGB}{85,85,85}
+
+\begin{document}
+\begin{tikzpicture}[
+  box/.style={draw=gsBlue, line width=1pt, rounded corners, fill=gsBlue!8,
+    align=center, inner sep=8pt, text width=10.5cm, font=\large},
+  dec/.style={draw=sadRed, line width=1pt, diamond, aspect=2.4, fill=sadRed!8,
+    align=center, inner sep=2pt, font=\large},
+  bad/.style={draw=sadRed, line width=1pt, rounded corners, fill=sadRed!12,
+    align=center, inner sep=6pt, text width=4.6cm, font=\large},
+  good/.style={draw=cudaG, line width=1pt, rounded corners, fill=cudaG!12,
+    align=center, inner sep=6pt, text width=10.5cm, font=\large},
+  arr/.style={-{Stealth[length=3mm]}, line width=1pt, greyT},
+]
+
+\node[box] (in) {Input from \texttt{computeCov2D} (dilated)\\[3pt]
+  $\Sigma''=\begin{pmatrix}\Sigma''_{00} & \Sigma'_{01}\\ \Sigma'_{01} & \Sigma''_{11}\end{pmatrix}$};
+
+\node[dec, below=1.1cm of in] (det) {$\det=\Sigma''_{00}\,\Sigma''_{11}-{\Sigma'_{01}}^{2}$\\[2pt]$\det = 0\ ?$};
+
+\node[bad, below left=1.0cm and 1.2cm of det] (cull) {Gaussian is culled\\(not rendered)};
+
+\node[good, below=1.1cm of det] (conic) {$\Sigma'^{-1}=\mathrm{conic}=\dfrac{1}{\det}\begin{pmatrix}\Sigma''_{11} & -\Sigma'_{01}\\ -\Sigma'_{01} & \Sigma''_{00}\end{pmatrix}$\\[4pt]
+  stored as $(\mathrm{conic}.x,\ \mathrm{conic}.y,\ \mathrm{conic}.z)=\left(\dfrac{\Sigma''_{11}}{\det},\ \dfrac{-\Sigma'_{01}}{\det},\ \dfrac{\Sigma''_{00}}{\det}\right)$};
+
+\draw[arr] (in) -- (det);
+\draw[arr] (det.south) -- node[right, font=\small, text=greyT] {no} (conic.north);
+\draw[arr] (det.west) -- node[above, font=\small, text=greyT] {yes} (cull.east);
+
+\end{tikzpicture}
+\end{document}

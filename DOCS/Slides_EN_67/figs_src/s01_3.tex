@@ -1,0 +1,19 @@
+\documentclass[tikz,border=6pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Noto Sans}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\definecolor{cudaG}{RGB}{118,185,0}
+\definecolor{sadRed}{RGB}{200,60,50}
+\definecolor{gsBlue}{RGB}{40,110,190}
+\definecolor{pyYel}{RGB}{240,170,30}
+\definecolor{gray5}{RGB}{85,85,85}
+\begin{document}
+\begin{tikzpicture}[ev/.style={draw=#1,fill=#1!12,rounded corners,align=center,inner sep=7pt,text width=4.6cm,font=\normalsize}]
+\draw[line width=2pt,gray5,-{Stealth[length=3mm]}] (-0.5,0) -- (14.5,0);
+\foreach \x/\y in {1/2020,6.5/2023,12/2026}{\draw[line width=1.5pt,gray5] (\x,0.12) -- (\x,-0.12); \node[font=\Large\bfseries,below=3mm] at (\x,0) {\y};}
+\node[ev=gsBlue,above=10mm] at (1,0) (nerf) {\textbf{NeRF}\[2pt]Implicit neural radiance field\Accurate, but slow to render};
+\node[ev=cudaG,above=10mm] at (6.5,0) (gs) {\textbf{3D Gaussian Splatting}\[2pt]Explicit 3D Gaussians\Real-time rasterization on CUDA};
+\node[ev=sadRed,above=10mm] at (12,0) (sad) {\textbf{SADGS}\[2pt]Structure-aware densification\Used throughout this talk};
+\end{tikzpicture}
+\end{document}

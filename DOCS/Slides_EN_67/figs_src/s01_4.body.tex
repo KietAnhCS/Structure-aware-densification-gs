@@ -1,0 +1,10 @@
+\begin{tikzpicture}[st/.style={draw=#1,fill=#1!12,rounded corners,align=center,inner sep=6pt,minimum width=2.9cm,minimum height=3.6cm,font=\normalsize,text width=2.7cm},
+  arr/.style={-{Stealth[length=3mm]},line width=1.3pt,gray5}]
+\node[st=gsBlue] (s1) at (0,0) {\textbf{1. Setup}\[4pt]GPU check\install CUDA\submodules};
+\node[st=gsBlue] (s2) at (3.4,0) {\textbf{2. Load data}\[4pt]mount Drive\check 240 train\and 60 test images};
+\node[st=cudaG] (s3) at (6.8,0) {\textbf{3. Train SADGS}\[4pt]30,000 iterations\live Score every\1000 iterations};
+\node[st=sadRed] (s4) at (10.2,0) {\textbf{4. Render}\[4pt]render the 60 poses\from\\texttt{test\_poses.csv}};
+\node[st=pyYel] (s5) at (13.6,0) {\textbf{5. Submit}\[4pt]\texttt{submission.zip}\\texttt{HCM0539/0001.png}\...};
+\draw[arr] (s1) -- (s2); \draw[arr] (s2) -- (s3); \draw[arr] (s3) -- (s4); \draw[arr] (s4) -- (s5);
+\end{tikzpicture}
+\end{document}

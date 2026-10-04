@@ -1,0 +1,44 @@
+\input{preamble}
+
+\title[Render 3D for BTS Stations]{Rendering a BTS Station in 3D\[2pt]
+\large From the CUDA rasterizer to SADGS: a digital twin for telecom sites}
+\author{30-minute talk}
+\date{\today}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+\section{Problem and results}
+\input{sections/s01}
+
+\section{CUDA foundations}
+\input{sections/s02}
+
+\section{Forward pass: from Gaussians to pixels}
+\input{sections/s03}
+\input{sections/s04}
+\input{sections/s05}
+\input{sections/s06}
+
+\section{Backward pass: gradients back to Gaussians}
+\input{sections/s07}
+\input{sections/s08}
+\input{sections/s09}
+
+\section{SADGS and applications}
+\input{sections/s10}
+
+\begin{frame}
+  \centering
+  {\Large Thank you --- Questions?}\[6pt]
+  {\footnotesize Sources: \texttt{MATH/submodules/diff-gaussian-rasterization\_structgs/}, \texttt{DOCS/BOOK/}, \texttt{bts\_digital\_twin.ipynb}}
+\end{frame}
+
+\end{document}

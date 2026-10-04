@@ -22,6 +22,7 @@ bấm vào link là nhảy thẳng tới đúng mục đó trong file (không ph
 - [8. Utils — các khối công thức dùng chung](#chuong-8)
 - [9. LPIPS (perceptual loss)](#chuong-9)
 - [10. Render & đánh giá kết quả](#chuong-10)
+- [11. Toàn cảnh một trang (end-to-end)](#chuong-11)
 
 ---
 
@@ -66,7 +67,11 @@ bấm vào link là nhảy thẳng tới đúng mục đó trong file (không ph
 <a id="chuong-2"></a>
 ## 2. Entry point huấn luyện & pipeline điều phối
 
-*`train.py` là vòng lặp huấn luyện chính; `pipeline/*` là lớp điều phối bọc xung quanh (chạy thực nghiệm, báo cáo, nộp bài).*
+*`train.py` từng là vòng lặp huấn luyện CLI độc lập; `pipeline/*` là lớp điều phối bọc xung quanh (chạy thực nghiệm,
+báo cáo, nộp bài) — hiện là **nhánh huấn luyện duy nhất còn dùng** (chạy trên Google Colab). Xem [§11](#chuong-11).*
+
+> ⚠️ **`train.py` đã bị xoá khỏi repo** (dự án chỉ chạy trên Colab qua `pipeline/trainer.py`, xem [§11](#chuong-11)).
+> `train.md` dưới đây vẫn giữ lại làm tài liệu công thức tham khảo (file `.py` nguồn có thể khôi phục qua git nếu cần).
 
 ### 📄 [`train.md`](train.md)
 <sub>Tài liệu tổng hợp cơ sở toán học trong vòng lặp huấn luyện `training()`, bám sát đúng thứ tự và hệ số xuất hiện trong code.</sub>
@@ -952,6 +957,11 @@ bấm vào link là nhảy thẳng tới đúng mục đó trong file (không ph
 
 *Script chạy inference cuối cùng (`render.py`), tính điểm (`metrics.py`), và chạy toàn bộ benchmark (`full_eval.py`).*
 
+> ⚠️ **Cả ba file `render.py`, `metrics.py`, `full_eval.py` đã bị xoá khỏi repo** — dự án chỉ chạy trên Google Colab,
+> nơi vai trò tương ứng do `pipeline/submission.py:render_scene` (render ảnh test) và `pipeline/score.py`
+> (PSNR/SSIM/LPIPS inline) đảm nhiệm, xem [§11](#chuong-11). Các mục `render.md`/`metrics.md`/`full_eval.md` dưới đây
+> vẫn giữ lại làm tài liệu công thức tham khảo (file `.py` nguồn có thể khôi phục qua git nếu cần).
+
 ### 📄 [`render.md`](render.md)
 <sub>`render.py` là một script điều phối: nó khởi tạo `GaussianModel`, nạp `Scene` đã huấn luyện, rồi gọi hàm render thực sự `render_structgs` (định nghĩa trong `gaussian_renderer/`, **không nằm trong file này**) cho từng ...</sub>
 
@@ -990,6 +1000,193 @@ bấm vào link là nhảy thẳng tới đúng mục đó trong file (không ph
     - [2.3. Độ phân giải ảnh theo nhóm](full_eval.md#23-độ-phân-giải-ảnh-theo-nhóm)
 - [Bảng hằng số/ngưỡng](full_eval.md#bảng-hằng-sốngưỡng)
 - [Bảng tương ứng cú pháp ↔ công thức](full_eval.md#bảng-tương-ứng-cú-pháp-↔-công-thức)
+
+---
+
+<a id="chuong-11"></a>
+## 11. Toàn cảnh một trang (end-to-end)
+
+*Sơ đồ tổng hợp toàn bộ luồng chạy thật của pipeline SADGS trên Google Colab, từ lúc chuẩn bị dữ liệu đến lúc có
+điểm PSNR/SSIM/LPIPS cuối cùng — chỉ còn **một nhánh huấn luyện duy nhất** (`pipeline/trainer.py`), xem khung
+"LƯU Ý" ngay dưới sơ đồ để biết vì sao.*
+
+```mermaid
+flowchart TD
+    START(["pipeline/run.py<br/>setup → load_data → smoke_test → run_all → analytics → finish"])
+
+    START --> SETUP["setup()<br/>env.install_dependencies + check_gpu<br/>(run.py:14-27)"]
+    SETUP --> LOAD["load_data()<br/>download_dataset → find_scenes → verify_scene → profile_scenes<br/>(run.py:30-43, data.py)"]
+    LOAD --> SMOKE{"cfg.run_smoke?"}
+    SMOKE -->|"có"| SMOKETEST["smoke_test()<br/>train_scene(tag='smoke')<br/>(run.py:46-60)"]
+    SMOKE --> RUNALL["run_all()<br/>per scene (run.py:63-88)"]
+    SMOKETEST --> RUNALL
+
+    RUNALL --> TR["pipeline/trainer.py<br/>train_scene(cfg, scene)<br/>build_args → GaussianModel → Scene → training_setup<br/>(trainer.py:20-128)"]
+
+    TR --> LOOP{{"VÒNG LẶP HUẤN LUYỆN<br/>(trainer.py:154-307)"}}
+
+    LOOP --> L1["update_learning_rate, oneupSHdegree<br/>(trainer.py:156-157)"]
+    L1 --> L2["batch loop: render_structgs(cam, gaussians, pipe, bg)<br/>gaussian_renderer/__init__.py:18-127"]
+    L2 --> CUDA["GaussianRasterizer.forward → rasterize_gaussians<br/>→ _C.rasterize_gaussians (CUDA)<br/>submodules/diff-gaussian-rasterization_structgs/__init__.py"]
+    CUDA --> L3["loss = (1-λ)·L1 + λ·(1-SSIM) [+ λ_l2·L2]<br/>loss.backward()<br/>(trainer.py:174-178)"]
+    L3 --> L4["add_densification_stats<br/>update_freq_stats_online mỗi 10 iter<br/>(gaussian_model.py:1054)"]
+    L4 --> L5{"iteration < densify_until_iter?"}
+    L5 -->|"đúng chu kỳ"| L6["densify_and_prune_structgs (chính)<br/>hoặc densify_and_prune (warmup, trước densify_until_iter)<br/>(gaussian_model.py:957 / :911)"]
+    L6 --> L7["reset_opacity theo opacity_reset_interval<br/>(gaussian_model.py:415)"]
+    L5 -->|"không"| L8
+    L7 --> L8["prune_points: opacity < 0.1<br/>tại các prune_iterations cố định<br/>(gaussian_model.py:528)"]
+    L8 --> L9["optimizer_step / sparse_adam<br/>(gaussian_model.py:357, _C.adamUpdate)"]
+    L9 --> L10{"tới mốc score_every / save_every?"}
+    L10 -->|"có"| SCOREPERIODIC["pipeline.score.evaluate_cameras<br/>(trainer.py:272-296)"]
+    L10 -->|"có"| SAVE["Scene.save(iteration)<br/>→ gaussians.save_ply(...)<br/>(scene/__init__.py:85-87)"]
+    SCOREPERIODIC --> LOOP
+    SAVE --> LOOP
+    L10 -->|"không"| LOOP
+
+    LOOP -->|"hết iterations"| DONE["in số Gaussian cuối + tổng thời gian<br/>(trainer.py:309-320)"]
+
+    DONE --> OUT1[("point_cloud/iteration_N/point_cloud.ply")]
+    DONE --> AUTOSAVE["deliver.autosave_scene → Google Drive<br/>(run.py:76-80, deliver.py)"]
+
+    OUT1 --> R1["pipeline.submission.render_scene<br/>ảnh test, đặt tên theo test_poses.csv<br/>(run.py:82-83, submission.py)"]
+
+    R1 --> SCORE1["pipeline.score.composite_score<br/>PSNR/SSIM/LPIPS inline<br/>(submission.py:91-99)"]
+
+    SCORE1 --> WRAP["analytics(): report.py<br/>history/leaderboard/plots<br/>finish(): submission.build_zip+verify, deliver.pack_models+download<br/>(run.py:97-120)"]
+
+    style START fill:#2d6cdf,color:#fff
+    style LOOP fill:#6b21a8,color:#fff
+    style CUDA fill:#6b21a8,color:#fff
+    style OUT1 fill:#0b7a3b,color:#fff
+    style WRAP fill:#0b7a3b,color:#fff
+```
+
+> ⚠️ **ĐÃ DỌN REPO — chỉ còn luồng Colab**: `train.py`, `full_eval.py`, `render.py`, `metrics.py` (các file ở gốc repo)
+> **đã bị xoá khỏi working tree** vì dự án chỉ chạy trên Google Colab qua `pipeline/*`. Trước đây `pipeline/trainer.py`
+> là một bản cài đặt **song song, không `import`** `train.py` (hai bản viết tay riêng của cùng vòng lặp huấn luyện);
+> giờ `pipeline/trainer.py` là **bản duy nhất còn lại**. Các mục `train.md`/`metrics.md`/`full_eval.md`/`render.md`
+> ở chương 2 và chương 10 vẫn còn trong `MATH/` làm tài liệu công thức tham khảo, nhưng **không còn file `.py` nguồn
+> tương ứng** trong repo (có thể khôi phục qua lịch sử git nếu cần).
+
+### 11.1 Bản rút gọn dạng cây — `pipeline/run.py` (điều phối Colab)
+
+*Đây là nhánh "pipeline": gọi `trainer.train_scene(...)` như một hộp đen ở bước `run_all()` — chi tiết bên trong hộp
+đen đó nằm ở **§11.2**, không lặp lại ở đây.*
+
+```
+pipeline/run.py
+├─ setup()                                              (run.py:14-27)
+│  ├─ env.install_dependencies()                        (env.py:106-139)
+│  ├─ data.mount_drive(cfg)  [nếu drive_mount/autosave]  (data.py:50-66)
+│  └─ env.check_gpu(require=True)                       (env.py:60-77)
+├─ load_data()                                           (run.py:30-43)
+│  ├─ data.download_dataset()                           (data.py:161-198)
+│  ├─ data.resolve_subdir()                              (data.py:90-102)
+│  ├─ data.find_scenes()                                 (data.py:201-226)
+│  ├─ data.verify_scene()  — mỗi scene                   (data.py:105-158)
+│  └─ data.profile_scenes()                              (data.py:252-295)
+├─ smoke_test()  [nếu cfg.run_smoke]                      (run.py:46-60)
+│  └─ trainer.train_scene(trial, tag="smoke")  →  xem §11.2
+├─ run_all()  — lặp từng scene                            (run.py:63-88)
+│  ├─ trainer.train_scene(cfg, scene)  ★ hộp đen →  xem §11.2
+│  │  ├─ lỗi   → deliver.autosave_scene(cfg, scene) rồi raise lại   (76-78)
+│  │  └─ xong  → deliver.autosave_scene(cfg, scene)                 (80)
+│  ├─ env.free_memory(tag=...)                           (77 / 81 / 84)
+│  ├─ pipeline.submission.render_scene(cfg, scene, iterations)       (82-83)
+│  │  ├─ render_structgs mỗi camera test  →  xem §11.3
+│  │  ├─ lưu ảnh 0001.png... theo pipeline.testposes      (submission.py:70-76)
+│  │  └─ pipeline.score.composite_score → PSNR/SSIM/LPIPS inline  (91-99)
+│  └─ _dump_results → output_root/results.json sau MỖI scene  (86-94, chống crash mất dữ liệu)
+├─ analytics()                                            (run.py:97-104)
+│  ├─ report.history_frame → history.csv                 (report.py:9-18)
+│  ├─ report.leaderboard → leaderboard.csv                (report.py:21-49)
+│  ├─ report.plot_training → training.png                 (report.py:52-103)
+│  └─ report.plot_leaderboard → leaderboard.png           (report.py:106-160)
+└─ finish()                                                (run.py:107-120)
+   ├─ submission.build_zip → submission.zip               (submission.py:117-135)
+   ├─ submission.verify(expected=scenes)                   (submission.py:138-192)
+   ├─ deliver.pack_models  [nếu cfg.download_model]         (deliver.py:9-33)
+   └─ deliver.download(cfg, targets)                       (deliver.py:97-116)
+```
+
+### 11.2 Bản rút gọn dạng cây — `pipeline/trainer.py` (vòng lặp huấn luyện)
+
+*Được gọi từ `run_all()`/`smoke_test()` ở §11.1. Đây là bản cài đặt vòng lặp huấn luyện duy nhất còn lại trong repo
+(bản `train.py` CLI độc lập trước đây đã bị xoá — xem khung LƯU Ý ở đầu mục 11).*
+
+```
+pipeline/trainer.py: train_scene(cfg, scene, ...)         (trainer.py:95-329)
+├─ build_args(cfg, scene, ...)                             (trainer.py:20-53)
+│  └─ co giãn densify_until_iter / opacity_reset_interval theo cfg.iterations  (29-33)
+├─ GaussianModel(dataset.sh_degree, opt.optimizer_type)     (116)
+├─ Scene(dataset, gaussians)                                 (117)
+│  ├─ sceneLoadTypeCallbacks["Colmap"|"Blender"]            (scene/__init__.py:43-49)
+│  ├─ cameraList_from_camInfos → train/test cameras          (scene/__init__.py:71-75)
+│  └─ gaussians.create_from_pcd(point_cloud, extent)         (gaussian_model.py:261)
+├─ gaussians.training_setup(opt)                             (118, gaussian_model.py:286)
+├─ compute_3D_filter / zero-init filter_3D                   (120-123)
+├─ _precompute_structure_tensors(dataset, opt, scene_obj)     (67-92, gọi tại 128)
+├─ holdout = getTestCameras() hoặc mỗi-8-ảnh                 (130-132)
+├─ prune_iterations = tỉ lệ cố định của densify_until_iter    (135-136)
+└─ for iteration in tqdm(range(1, iterations+1))             (154-307)
+   ├─ update_learning_rate, oneupSHdegree                     (156-157)
+   ├─ batch loop (opt.batch_size)                             (163-189)
+   │  ├─ pop camera từ viewpoint_stack (FPS/random, _refill_stack)  (145-151)
+   │  ├─ render_pkg = render_structgs(cam, gaussians, pipe, bg, mult)  (168) → xem §11.3
+   │  ├─ ll1 = l1_loss, ll2 = l2_loss, ssim_value = fast_ssim           (174-176)
+   │  ├─ loss = (1-λ_dssim)·L1 + λ_dssim·(1-SSIM) + λ_l2·L2             (177)
+   │  ├─ loss.backward()                                               (178)
+   │  └─ update_freq_stats_online(...)  mỗi 10 iter, khi đang densify  (182-188)
+   ├─ EMA loss hiển thị                                        (192)
+   ├─ khi iteration < opt.densify_until_iter:                  (194-242)
+   │  ├─ gaussians.max_radii2D update + add_densification_stats         (195-197)
+   │  ├─ mỗi densification_interval iter → densify_and_prune_structgs    (219-224)
+   │  │  rồi reset các buffer eta/accum                                  (226-234)
+   │  ├─ mỗi 100 iter TRƯỚC khi densify chính kịp chạy (warmup)
+   │  │  → densify_and_prune                                             (237-238)
+   │  └─ mỗi opacity_reset_interval iter → reset_opacity(opacity_reset_decay)  (240-242)
+   ├─ compute_3D_filter refresh định kỳ                        (244-246)
+   ├─ tại các prune_iterations cố định → prune_points(opacity < 0.1)      (248-250)
+   ├─ optimizer_step (default) / sparse_adam / hybrid           (252-264)
+   ├─ cập nhật postfix tqdm mỗi 10 iter                         (266-270)
+   ├─ mỗi cfg.score_every iter (hoặc iter cuối):
+   │  pipeline.score.evaluate_cameras(gaussians, holdout, pipe, background,
+   │  opt.mult, cfg.eval_views, cfg.psnr_max, cfg.lpips_net_live)         (272-296)
+   └─ mỗi cfg.save_every iter → _save_checkpoint(...)            (303-306)
+      └─ scene_obj.save(iteration) → gaussians.save_ply(...)     (scene/__init__.py:85-87)
+      → point_cloud/iteration_N/point_cloud.ply   ★ OUTPUT, rồi xoá checkpoint cũ (56-64)
+
+sau vòng lặp:
+├─ _save_checkpoint(...) lần cuối                             (309)
+└─ trả về result{n_gauss, thời gian, VRAM đỉnh, history, metrics cuối}  (312-320)
+```
+
+### 11.3 Bản rút gọn dạng cây — Renderer dùng chung (`gaussian_renderer` + CUDA)
+
+*`render_structgs` là điểm mà `pipeline/trainer.py` gọi tới mỗi iteration (§11.2), và cũng là nơi
+`pipeline/submission.py:render_scene` gọi lại khi render ảnh test cuối cùng (§11.1).*
+
+```
+gaussian_renderer/__init__.py: render_structgs(viewpoint_camera, pc, pipe, bg, mult, ...)   (18-127)
+├─ screenspace_points (tensor rỗng để nhận gradient 2D-means)         (26-31)
+├─ GaussianRasterizationSettings(...)                                 (40-57)
+├─ GaussianRasterizer(raster_settings)                                 (59)
+├─ means3D = pc.get_xyz; opacity = pc.get_opacity_with_3D_filter       (61-63)
+├─ [pipe.compute_cov3D_python] pc.get_covariance(...)
+│  ngược lại: truyền scales + rotations thẳng cho rasterizer            (65-75)
+├─ [pipe.convert_SHs_python] eval_sh trong Python
+│  ngược lại: truyền dc/shs thô cho rasterizer tự eval                  (77-112)
+└─ rasterizer(means3D=..., means2D=..., dc=..., shs=..., ...)           (91-112)
+   └─ submodules/diff-gaussian-rasterization_structgs/__init__.py
+      ├─ GaussianRasterizer.forward(...)                               (211-247)
+      ├─ rasterize_gaussians(...) → _RasterizeGaussians.apply(...)      (21-44)
+      ├─ _RasterizeGaussians.forward → _C.rasterize_gaussians(*args)    (48-113)
+      │  trả về (num_rendered, color, radii, geomBuffer, binningBuffer,
+      │  imgBuffer, accum_metric_counts, cov2D, depth_map, opacity_map, normal_map)
+      └─ _RasterizeGaussians.backward → _C.rasterize_gaussians_backward(*args)  (115-175)
+         → gradient cho means3D/means2D/dc/sh/colors/opacities/scales/rotations/cov3D
+→ trả dict {render, viewspace_points, visibility_filter, radii, depth_map, ...}  (118-127)
+```
 
 ---
 

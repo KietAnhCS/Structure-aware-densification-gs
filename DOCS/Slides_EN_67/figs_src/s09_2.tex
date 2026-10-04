@@ -1,0 +1,50 @@
+\documentclass[tikz,border=6pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Noto Sans}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\definecolor{cudaG}{RGB}{118,185,0}
+\definecolor{gsBlue}{RGB}{40,110,190}
+\definecolor{sadRed}{RGB}{200,60,50}
+\definecolor{pyYel}{RGB}{240,170,30}
+\definecolor{gray5}{RGB}{85,85,85}
+\begin{document}
+\begin{tikzpicture}[
+  >=Stealth,
+  inp/.style={draw=gray5,fill=gray5!8,rounded corners,align=center,minimum width=5.2cm,minimum height=1.5cm,font=\Large},
+  upd/.style={draw=cudaG,line width=1.2pt,fill=cudaG!12,rounded corners,align=center,minimum width=8.6cm,minimum height=1.9cm,font=\Large},
+  stp/.style={draw=gsBlue,line width=1.2pt,fill=gsBlue!10,rounded corners,align=center,minimum width=7.2cm,minimum height=1.9cm,font=\Large},
+  out/.style={draw=sadRed,line width=1.2pt,fill=sadRed!10,rounded corners,align=center,minimum width=5.6cm,minimum height=1.9cm,font=\Large},
+  cst/.style={draw=pyYel,line width=1pt,fill=pyYel!12,rounded corners,align=center,font=\large,minimum width=27cm,minimum height=1.6cm},
+  arr/.style={-{Stealth[length=3mm]},line width=1pt,gray5}
+]
+  % inputs
+  \node[inp] (g) at (0,0) {gradient $g_t$\[2pt]{\normalsize \texttt{param\_grad}}};
+  \node[inp] (mp) at (0,-3.2) {$m_{t-1}$\[2pt]{\normalsize \texttt{exp\_avg}}};
+  \node[inp] (vp) at (0,-6.4) {$v_{t-1}$\[2pt]{\normalsize \texttt{exp\_avg\_sq}}};
+
+  % EMA updates
+  \node[upd] (m) at (8.6,-1.6) {$m_t=\beta_1\,m_{t-1}+(1-\beta_1)\,g_t$};
+  \node[upd] (v) at (8.6,-4.8) {$v_t=\beta_2\,v_{t-1}+(1-\beta_2)\,g_t^{2}$};
+
+  % step
+  \node[stp] (d) at (18.2,-3.2) {$\Delta\theta_t=-\eta\,\dfrac{m_t}{\sqrt{v_t}+\epsilon}$};
+  \node[out] (th) at (25.3,-3.2) {$\theta_t=\theta_{t-1}+\Delta\theta_t$};
+
+  \draw[arr] (g.east) -- ++(1.2,0) |- (m.west);
+  \draw[arr] (g.east) -- ++(1.2,0) |- (v.west);
+  \draw[arr] (mp.east) -- ++(1.2,0) |- (m.west);
+  \draw[arr] (vp.east) -- ++(1.2,0) |- (v.west);
+  \draw[arr] (m.east) -- ++(1.4,0) |- (d.west);
+  \draw[arr] (v.east) -- ++(1.4,0) |- (d.west);
+  \draw[arr] (d.east) -- (th.west);
+
+  % write back note
+  \node[font=\normalsize,gray5,align=center] at (8.6,-7.9) {$m_t$, $v_t$ are written back to \texttt{exp\_avg}, \texttt{exp\_avg\_sq}};
+
+  % constants
+  \node[cst] (c) at (13,-10.4) {\normalsize$\beta_1=0.9,\quad \beta_2=0.999,\quad \epsilon=10^{-8}$ (default, \texttt{adam\_eps\_order}$=8$),\quad $\eta$ = learning rate\[3pt]
+  \textbf{No bias correction:} $\hat m_t=m_t/(1-\beta_1^t)$ and $\hat v_t=v_t/(1-\beta_2^t)$ are \textbf{not} computed};
+\end{tikzpicture}
+\end{document}
